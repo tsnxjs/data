@@ -1,5 +1,6 @@
 import type { IUnitOfWork } from '../unit-of-work/types.js';
 import type { EntityConstructor, IDbSet, IRepository } from '../repository/types.js';
+import type { IDbCommandInterceptor } from '../interceptors/types.js';
 
 /**
  * Provides database-level management, migrations, and connectivity checks
@@ -49,6 +50,7 @@ export interface DbContextOptions<TOptions = unknown> {
   ensureCreated?: boolean;
   enableLogging?: boolean;
   enableSensitiveDataLogging?: boolean;
+  interceptors?: IDbCommandInterceptor[];
   providerOptions?: TOptions;
 }
 
@@ -80,6 +82,14 @@ export class DbContextOptionsBuilder<TOptions = unknown> {
 
   enableSensitiveDataLogging(enable = true): this {
     this._options.enableSensitiveDataLogging = enable;
+    return this;
+  }
+
+  addInterceptor(interceptor: IDbCommandInterceptor): this {
+    if (!this._options.interceptors) {
+      this._options.interceptors = [];
+    }
+    this._options.interceptors.push(interceptor);
     return this;
   }
 

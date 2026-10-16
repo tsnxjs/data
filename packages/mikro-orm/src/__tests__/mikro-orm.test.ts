@@ -10,6 +10,9 @@ import {
   DB_CONTEXT_FACTORY,
   DbConcurrencyException,
   type IDbContextFactory,
+  type IDbCommandInterceptor,
+  type DbCommandContext,
+  type IValueConverter,
 } from '@tsnx/data';
 import {
   addMikroOrm,
@@ -17,6 +20,7 @@ import {
   MIKRO_ORM,
   MIKRO_ORM_EM,
   MikroHostService,
+  createValueConverterType,
 } from '../index.js';
 
 class Book {
@@ -57,6 +61,20 @@ const InventoryItemSchema = new EntitySchema({
     version: { type: 'number', version: true },
   },
 });
+
+class Money {
+  constructor(readonly amount: number, readonly currency: string) {}
+}
+
+const MoneyConverter: IValueConverter<Money, string> = {
+  convertToDatabase(m: Money): string {
+    return `${m.amount} ${m.currency}`;
+  },
+  convertToModel(s: string): Money {
+    const [amount, currency] = s.split(' ');
+    return new Money(Number(amount), currency);
+  },
+};
 
 describe('@tsnx/mikro-orm - EF Core Inspired Integration', () => {
   it('manages lifecycle, scoped identity maps, and transactions', async () => {
@@ -119,7 +137,22 @@ describe('@tsnx/mikro-orm - EF Core Inspired Integration', () => {
       assert.equal(readOnlyBooks.length, 1);
       assert.equal(readOnlyBooks[0].title, 'Enterprise Architecture with TSNX');
 
-      // 4. Test Transaction rollback on error
+      // 4. Test Bulk Operations: executeUpdate and executeDelete (P2)
+      const updatedCount = await books1.executeUpdate(
+        { id: newBook.id },
+        { title: 'Bulk Updated Title' },
+      );
+      assert.equal(updatedCount, 1);
+
+      const refreshedBook = await books2.findById(newBook.id);
+      assert.equal(refreshedBook?.title, 'Bulk Updated Title');
+
+      const deletedCount = await books1.executeDelete({ id: newBook.id });
+      assert.equal(deletedCount, 1);
+      const afterDelete = await books2.findOne({ id: newBook.id }, { asNoTracking: true });
+      assert.equal(afterDelete, null);
+
+      // 5. Test Transaction rollback on error
       let errorThrown = false;
       try {
         await ctx1.executeInTransaction(async () => {
@@ -137,20 +170,21 @@ describe('@tsnx/mikro-orm - EF Core Inspired Integration', () => {
       const booksAfterRollback = await books2.findMany({ title: 'Should Rollback' });
       assert.equal(booksAfterRollback.length, 0);
 
-      // 5. Test IDbContextFactory (outside HTTP scope)
+      // 6. Test IDbContextFactory (outside HTTP scope)
       const factory = rootProvider.get<IDbContextFactory<MikroDbContext>>(DB_CONTEXT_FACTORY);
       assert.ok(factory, 'IDbContextFactory must be registered as singleton');
 
       const workerDb = factory.createDbContext();
-      const workerBooks = await workerDb.set(Book).findMany();
-      assert.ok(workerBooks.length >= 1);
+      const testSeed = new Book('Worker Created');
+      workerDb.set(Book).add(testSeed);
+      await workerDb.saveChanges();
       workerDb.dispose();
 
       // Clean up scopes
       await scope1.dispose();
       await scope2.dispose();
     } finally {
-      // 6. Test HostedService graceful shutdown
+      // 7. Test HostedService graceful shutdown
       await hs.stop(new AbortController().signal);
       assert.equal(hostService.isReady, false);
     }
@@ -212,6 +246,57 @@ describe('@tsnx/mikro-orm - EF Core Inspired Integration', () => {
       assert.equal(concurrencyError.name, 'DbConcurrencyException');
 
       contextB.dispose();
+    } finally {
+      await hs.stop(new AbortController().signal);
+    }
+  });
+
+  it('createValueConverterType converts domain value objects to DB primitives and back', () => {
+    const MoneyType = createValueConverterType('MoneyType', MoneyConverter, 'varchar(50)');
+    const instance = new MoneyType();
+
+    const dbVal = instance.convertToDatabaseValue(new Money(150, 'USD'), {} as any);
+    assert.equal(dbVal, '150 USD');
+
+    const modelVal = instance.convertToJSValue('250 EUR', {} as any);
+    assert.ok(modelVal instanceof Money);
+    assert.equal(modelVal.amount, 250);
+    assert.equal(modelVal.currency, 'EUR');
+  });
+
+  it('DbCommandInterceptor observes executed SQL commands', async () => {
+    const intercepted: DbCommandContext[] = [];
+    const testInterceptor: IDbCommandInterceptor = {
+      afterExecute(ctx) {
+        intercepted.push(ctx);
+      },
+    };
+
+    const config = defineConfig({
+      dbName: ':memory:',
+      entities: [BookSchema],
+    });
+
+    const orm = await MikroORM.init(config);
+    const services = new ServiceCollection();
+    addMikroOrm(services, orm, {
+      ensureCreated: true,
+      interceptors: [testInterceptor],
+    });
+
+    const rootProvider = services.buildServiceProvider();
+    const hs = services.findAll(HOSTED_SERVICE_TOKEN)[0].factory!(rootProvider);
+    await hs.start(new AbortController().signal);
+
+    try {
+      const scope = rootProvider.createScope();
+      const db = scope.get(MikroDbContext);
+      await db.set(Book).findMany();
+
+      // Interceptor must have received query logs
+      assert.ok(intercepted.length > 0, 'Command interceptor must capture executed queries');
+      assert.ok(intercepted.some((i) => i.command.toLowerCase().includes('select')));
+      await scope.dispose();
     } finally {
       await hs.stop(new AbortController().signal);
     }

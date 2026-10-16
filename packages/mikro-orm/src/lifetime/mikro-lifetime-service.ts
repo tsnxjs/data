@@ -48,22 +48,46 @@ export class MikroHostService implements HostedService {
           this._orm = await this.source();
         } else {
           const config = { ...(this.source as Options) };
-          if (this.options?.enableSensitiveDataLogging) {
-            config.debug = true;
-          } else if (this.options?.enableLogging !== undefined) {
-            config.debug = Boolean(this.options.enableLogging);
-          }
           this._orm = await MikroORM.init(config);
         }
       }
 
-      // 2. Verify / ensure connection
+      // 2. Attach query interceptors & debug logging via ORM logger
+      if (this.options?.interceptors?.length) {
+        const interceptors = this.options.interceptors;
+        const logger = this._orm.config.getLogger() as any;
+        if (typeof logger.setDebugMode === 'function') {
+          logger.setDebugMode(true);
+        }
+        const originalWriter = typeof logger.writer === 'function' ? logger.writer : null;
+        logger.writer = (message: string) => {
+          const context = { command: message, startTime: Date.now() };
+          for (const interceptor of interceptors) {
+            interceptor.afterExecute?.(context);
+          }
+          if (this.options?.enableLogging && originalWriter) {
+            originalWriter(message);
+          }
+        };
+      } else if (this.options?.enableSensitiveDataLogging) {
+        const logger = this._orm.config.getLogger() as any;
+        if (typeof logger.setDebugMode === 'function') {
+          logger.setDebugMode(true);
+        }
+      } else if (this.options?.enableLogging !== undefined) {
+        const logger = this._orm.config.getLogger() as any;
+        if (typeof logger.setDebugMode === 'function') {
+          logger.setDebugMode(Boolean(this.options.enableLogging));
+        }
+      }
+
+      // 3. Verify / ensure connection
       const isConnected = await this._orm.isConnected();
       if (!isConnected) {
         await this._orm.connect();
       }
 
-      // 3. Auto-migration or schema creation if configured
+      // 4. Auto-migration or schema creation if configured
       if (this.options?.autoMigrate && this._orm.migrator) {
         await this._orm.migrator.up();
       } else if (this.options?.ensureCreated && this._orm.schema) {

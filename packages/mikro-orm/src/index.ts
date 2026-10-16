@@ -10,6 +10,9 @@ export * from './context/mikro-transaction.js';
 // Repositories
 export * from './repository/mikro-repository.js';
 
+// Converters (ValueConverter)
+export * from './converters/value-converter-type.js';
+
 // Host Service & Types
 export * from './lifetime/mikro-lifetime-service.js';
 

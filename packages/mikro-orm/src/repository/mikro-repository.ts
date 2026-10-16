@@ -1,4 +1,9 @@
-import type { IDbSet, EntityConstructor, FilterQuery, FindOptions } from '@tsnx/data';
+import type {
+  IDbSet,
+  EntityConstructor,
+  FilterQuery,
+  FindOptions,
+} from '@tsnx/data';
 import type { EntityManager } from '@mikro-orm/core';
 
 export class MikroDbSet<TEntity extends object, TId = unknown>
@@ -62,6 +67,30 @@ export class MikroDbSet<TEntity extends object, TId = unknown>
     }
   }
 
+  /**
+   * Executes a bulk update directly in the database without loading entities into memory.
+   */
+  async executeUpdate(
+    filter: FilterQuery<TEntity>,
+    data: Partial<TEntity> | Record<string, any>,
+  ): Promise<number> {
+    return await this.em.nativeUpdate(
+      this.entityType as any,
+      (filter ?? {}) as any,
+      data as any,
+    );
+  }
+
+  /**
+   * Executes a bulk delete directly in the database without loading entities into memory.
+   */
+  async executeDelete(filter: FilterQuery<TEntity>): Promise<number> {
+    return await this.em.nativeDelete(
+      this.entityType as any,
+      (filter ?? {}) as any,
+    );
+  }
+
   private mapOptions(options?: FindOptions<TEntity>): any {
     if (!options) return undefined;
     const mapped: any = {};
@@ -71,6 +100,7 @@ export class MikroDbSet<TEntity extends object, TId = unknown>
     if (options.populate) mapped.populate = options.populate;
     if (options.fields) mapped.fields = options.fields;
     if (options.asNoTracking) mapped.disableIdentityMap = true;
+    if (options.cache !== undefined) mapped.cache = options.cache;
     return mapped;
   }
 }

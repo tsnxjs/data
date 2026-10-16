@@ -10,6 +10,7 @@ import {
   DB_CONTEXT_FACTORY,
   type DbContextOptions,
   type EntityConstructor,
+  type IDbCommandInterceptor,
 } from '@tsnx/data';
 import type { MikroORM, EntityManager } from '@mikro-orm/core';
 import { MikroDbContext } from '../context/mikro-db-context.js';
@@ -27,6 +28,7 @@ export interface AddMikroOrmOptions<TContext extends MikroDbContext = MikroDbCon
   ensureCreated?: boolean;
   enableLogging?: boolean;
   enableSensitiveDataLogging?: boolean;
+  interceptors?: IDbCommandInterceptor[];
   connectionString?: string;
 }
 
@@ -60,6 +62,7 @@ export function addMikroOrm<TContext extends MikroDbContext = MikroDbContext>(
       ensureCreated: optionsOrContext.ensureCreated,
       enableLogging: optionsOrContext.enableLogging,
       enableSensitiveDataLogging: optionsOrContext.enableSensitiveDataLogging,
+      interceptors: optionsOrContext.interceptors,
       connectionString: optionsOrContext.connectionString,
     };
   }

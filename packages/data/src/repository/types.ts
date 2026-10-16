@@ -11,6 +11,7 @@ export interface FindOptions<T> {
   populate?: string[];
   fields?: (keyof T)[];
   asNoTracking?: boolean;
+  cache?: boolean | number | { key?: string; expiration?: number };
   cancellationToken?: AbortSignal;
 }
 
@@ -67,6 +68,21 @@ export interface IRepository<TEntity extends object, TId = unknown> extends IRea
    * Stages multiple entities for removal in the current Unit of Work.
    */
   removeMany(entities: TEntity[]): void | Promise<void>;
+
+  /**
+   * Executes a bulk update directly in the database without loading entities into memory.
+   * Returns the count of affected rows.
+   */
+  executeUpdate(
+    filter: FilterQuery<TEntity>,
+    data: Partial<TEntity> | Record<string, any>,
+  ): Promise<number>;
+
+  /**
+   * Executes a bulk delete directly in the database without loading entities into memory.
+   * Returns the count of affected rows.
+   */
+  executeDelete(filter: FilterQuery<TEntity>): Promise<number>;
 }
 
 /**
