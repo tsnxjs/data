@@ -7,7 +7,6 @@ import {
   DB_CONTEXT,
   DB_UNIT_OF_WORK,
   DB_CONTEXT_OPTIONS,
-  DATABASE_LIFETIME_SERVICE,
   type DbContextOptions,
   type EntityConstructor,
 } from '@tsnx/data';
@@ -15,7 +14,7 @@ import type { MikroORM, EntityManager } from '@mikro-orm/core';
 import { MikroDbContext } from '../context/mikro-db-context.js';
 import { MIKRO_ORM, MIKRO_ORM_EM } from '../context/tokens.js';
 import {
-  MikroLifetimeService,
+  MikroHostService,
   type MikroOrmSource,
 } from '../lifetime/mikro-lifetime-service.js';
 import { MikroDbSet } from '../repository/mikro-repository.js';
@@ -29,12 +28,12 @@ export interface AddMikroOrmOptions<TContext extends MikroDbContext = MikroDbCon
 }
 
 /**
- * Registers MikroORM integration into TSNX IServiceCollection.
+ * Registers MikroORM integration into TSNX IServiceCollection modeled after EF Core's AddDbContext.
  *
  * - MIKRO_ORM: Singleton, manages connection pools and metadata
  * - MIKRO_ORM_EM: Scoped, forked per scope/request for isolated Unit of Work
  * - MikroDbContext / ContextClass: Scoped, EF Core-like unit of work session
- * - Hosted Service: Automatically connects on host start and closes pools on host stop
+ * - Hosted Service: Transparently manages connection pooling and graceful shutdown
  */
 export function addMikroOrm<TContext extends MikroDbContext = MikroDbContext>(
   services: IServiceCollection,
@@ -63,16 +62,15 @@ export function addMikroOrm<TContext extends MikroDbContext = MikroDbContext>(
   // 1. Register DbContextOptions
   services.addSingleton<DbContextOptions>(DB_CONTEXT_OPTIONS, dbOptions);
 
-  // 2. Register Lifetime Service (Singleton)
-  const lifetime = new MikroLifetimeService(source, dbOptions);
-  services.addSingleton<MikroLifetimeService>(MikroLifetimeService, lifetime);
-  services.addSingleton(DATABASE_LIFETIME_SERVICE, lifetime);
+  // 2. Register Internal Host Service (Singleton)
+  const hostService = new MikroHostService(source, dbOptions);
+  services.addSingleton<MikroHostService>(MikroHostService, hostService);
 
   // 3. Register Hosted Service for lifecycle start/stop
-  services.addHostedService().toFactory((sp) => sp.get(MikroLifetimeService));
+  services.addHostedService().toFactory((sp) => sp.get(MikroHostService));
 
   // 4. Register MIKRO_ORM singleton
-  services.addSingleton<MikroORM>(MIKRO_ORM, (sp) => sp.get(MikroLifetimeService).instance);
+  services.addSingleton<MikroORM>(MIKRO_ORM, (sp) => sp.get(MikroHostService).instance);
 
   // 5. Register MIKRO_ORM_EM as Scoped (forked per scope / request)
   services.addScoped<EntityManager>(MIKRO_ORM_EM, (sp) =>

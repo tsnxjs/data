@@ -10,7 +10,7 @@ import {
   MikroDbContext,
   MIKRO_ORM,
   MIKRO_ORM_EM,
-  MikroLifetimeService,
+  MikroHostService,
 } from '../index.js';
 
 class Book {
@@ -52,9 +52,9 @@ describe('@tsnx/mikro-orm - EF Core Inspired Integration', () => {
     const hs = hostedDescriptors[0].factory!(rootProvider);
     await hs.start(new AbortController().signal);
 
-    const lifetime = rootProvider.get(MikroLifetimeService);
-    assert.equal(lifetime.isReady, true);
-    assert.equal(lifetime.instance, orm);
+    const hostService = rootProvider.get(MikroHostService);
+    assert.equal(hostService.isReady, true);
+    assert.equal(hostService.instance, orm);
     assert.equal(rootProvider.get(MIKRO_ORM), orm);
 
     try {
@@ -111,7 +111,7 @@ describe('@tsnx/mikro-orm - EF Core Inspired Integration', () => {
     } finally {
       // 5. Test HostedService graceful shutdown
       await hs.stop(new AbortController().signal);
-      assert.equal(lifetime.isReady, false);
+      assert.equal(hostService.isReady, false);
     }
   });
 });

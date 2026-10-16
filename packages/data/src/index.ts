@@ -9,9 +9,6 @@ export * from './unit-of-work/types.js';
 // Repositories & DbSet
 export * from './repository/types.js';
 
-// Lifecycle & Hosted Services
-export * from './lifecycle/types.js';
-
 // Migrations
 export * from './migrations/types.js';
 

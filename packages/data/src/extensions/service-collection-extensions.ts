@@ -8,7 +8,6 @@ import {
   DB_CONTEXT,
   DB_CONTEXT_OPTIONS,
   DB_UNIT_OF_WORK,
-  DATABASE_LIFETIME_SERVICE,
 } from '../db-context/tokens.js';
 import {
   DbContextOptionsBuilder,
@@ -16,35 +15,18 @@ import {
 } from '../db-context/types.js';
 import type { IRepository } from '../repository/types.js';
 
-export interface AddDbContextOptions<TOptions = unknown> {
-  configure?: (builder: DbContextOptionsBuilder<TOptions>) => void;
-  registerLifetimeHostedService?: boolean;
-}
-
 /**
  * Registers an EF Core-inspired DbContext in TSNX IServiceCollection.
- * The DbContext is registered with Scoped lifetime.
+ * The DbContext and its tokens (DB_CONTEXT, DB_UNIT_OF_WORK) are registered with Scoped lifetime.
  */
 export function addDbContext<TContext extends DbContext, TOptions = unknown>(
   services: IServiceCollection,
   ContextClass: Constructor<TContext>,
-  optionsOrConfigure?:
-    | ((builder: DbContextOptionsBuilder<TOptions>) => void)
-    | AddDbContextOptions<TOptions>,
+  configureOptions?: (builder: DbContextOptionsBuilder<TOptions>) => void,
 ): IServiceCollection {
   const builder = new DbContextOptionsBuilder<TOptions>();
-
-  let registerLifetime = true;
-
-  if (typeof optionsOrConfigure === 'function') {
-    optionsOrConfigure(builder);
-  } else if (optionsOrConfigure) {
-    if (optionsOrConfigure.configure) {
-      optionsOrConfigure.configure(builder);
-    }
-    if (optionsOrConfigure.registerLifetimeHostedService !== undefined) {
-      registerLifetime = optionsOrConfigure.registerLifetimeHostedService;
-    }
+  if (configureOptions) {
+    configureOptions(builder);
   }
 
   const options = builder.build();
@@ -60,21 +42,6 @@ export function addDbContext<TContext extends DbContext, TOptions = unknown>(
 
   // 4. Scoped: IUnitOfWork token alias
   services.addScoped(DB_UNIT_OF_WORK, (sp) => sp.get(ContextClass));
-
-  // 5. HostedService: DatabaseLifetimeService (if provider registered it)
-  if (registerLifetime) {
-    services.addHostedService().toFactory((sp) => {
-      const lifetime = sp.getOptional(DATABASE_LIFETIME_SERVICE);
-      if (!lifetime) {
-        // Return dummy hosted service if no adapter registered a lifetime service
-        return {
-          start: async () => {},
-          stop: async () => {},
-        };
-      }
-      return lifetime;
-    });
-  }
 
   return services;
 }

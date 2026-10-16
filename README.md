@@ -25,14 +25,11 @@
    - Explicit transactions (`await context.beginTransaction()`, `await tx.commit()`, `await tx.rollback()`).
    - Managed execution (`await context.executeInTransaction(async (tx) => { ... })`) with automatic rollback on error.
 
-3. **Hosted Service Database Lifetime (`DatabaseLifetimeService`)**:
-   - Automatically connects to the database during TSNX application boot (`app.run()`).
-   - Executes pending migrations or ensures database schema is ready before HTTP traffic is accepted.
-   - Handles partial startup failures gracefully by rolling back and cleaning up connection pools in `catch` before halting the host.
-   - Closes database connection pools gracefully during shutdown signals.
-
-4. **Repository & `DbSet<T>`**:
+3. **Repository & `DbSet<T>`**:
    - Access entities using `context.set(Entity)` or inject registered entity repositories directly via `addEntityRepository(services, Entity)`.
+
+4. **Transparent Host Lifecycle**:
+   - Connection pools are opened on demand / on host start and closed cleanly upon application shutdown (`SIGTERM`/`SIGINT`) via internal hosted services, keeping the public API clean and idiomatic.
 
 ---
 
@@ -66,16 +63,15 @@ addMikroOrm(builder.services, defineConfig({
 const app = builder.build();
 
 // Inject Scoped DbContext in endpoints
-app.mapGet('/users', async (context: MikroDbContext) => {
-  const users = context.set(User);
-  return await users.findMany();
+app.mapGet('/users', async (db: MikroDbContext) => {
+  return await db.set(User).findMany();
 });
 
-app.mapPost('/users', async (context: MikroDbContext, body: { name: string }) => {
-  const users = context.set(User);
+app.mapPost('/users', async (db: MikroDbContext, body: { name: string }) => {
+  const users = db.set(User);
   const user = new User(body.name);
   users.add(user);
-  await context.saveChanges();
+  await db.saveChanges();
   return user;
 });
 

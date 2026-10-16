@@ -9,7 +9,7 @@ export * from './context/mikro-transaction.js';
 // Repositories
 export * from './repository/mikro-repository.js';
 
-// Lifetime & Hosted Service
+// Host Service & Types
 export * from './lifetime/mikro-lifetime-service.js';
 
 // DI Extensions

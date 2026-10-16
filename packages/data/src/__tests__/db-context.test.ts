@@ -1,7 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { ServiceCollection } from '@tsnx/hosting';
-import { HOSTED_SERVICE_TOKEN } from '@tsnx/hosting-abstractions';
 import {
   DbContext,
   DbContextOptionsBuilder,
@@ -9,12 +8,10 @@ import {
   DB_CONTEXT,
   DB_UNIT_OF_WORK,
   DB_CONTEXT_OPTIONS,
-  DATABASE_LIFETIME_SERVICE,
   type IDatabaseFacade,
   type IDbTransaction,
   type IDbSet,
   type EntityConstructor,
-  type IDatabaseLifetimeService,
 } from '../index.js';
 
 class MockUser {
@@ -109,7 +106,7 @@ class TestDbContext extends DbContext {
   }
 }
 
-describe('@tsnx/data - Abstractions & DI Lifecycle', () => {
+describe('@tsnx/data - EF Core Inspired Abstractions & Scoped Lifecycle', () => {
   it('DbContextOptionsBuilder configures options correctly', () => {
     const builder = new DbContextOptionsBuilder();
     builder
@@ -164,37 +161,5 @@ describe('@tsnx/data - Abstractions & DI Lifecycle', () => {
 
     await scope1.dispose();
     await scope2.dispose();
-  });
-
-  it('registers and resolves IDatabaseLifetimeService hosted service', async () => {
-    const services = new ServiceCollection();
-    let started = false;
-    let stopped = false;
-
-    const mockLifetime: IDatabaseLifetimeService = {
-      isReady: true,
-      async initialize() {},
-      async close() {},
-      async start() {
-        started = true;
-      },
-      async stop() {
-        stopped = true;
-      },
-    };
-
-    services.addSingleton(DATABASE_LIFETIME_SERVICE, mockLifetime);
-    addDbContext(services, TestDbContext);
-
-    const rootProvider = services.buildServiceProvider();
-    // Resolve all hosted services registered
-    const hostedDescriptors = services.findAll(HOSTED_SERVICE_TOKEN);
-    assert.ok(hostedDescriptors.length > 0);
-
-    const hs = hostedDescriptors[0].factory!(rootProvider);
-    await hs.start(new AbortController().signal);
-    assert.equal(started, true);
-    await hs.stop(new AbortController().signal);
-    assert.equal(stopped, true);
   });
 });

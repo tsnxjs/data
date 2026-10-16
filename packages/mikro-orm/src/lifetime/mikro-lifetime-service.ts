@@ -1,4 +1,5 @@
-import type { IDatabaseLifetimeService, DbContextOptions } from '@tsnx/data';
+import type { DbContextOptions } from '@tsnx/data';
+import type { HostedService } from '@tsnx/hosting-abstractions';
 import { MikroORM, type Options } from '@mikro-orm/core';
 
 export type MikroOrmSource =
@@ -7,9 +8,9 @@ export type MikroOrmSource =
   | (() => Promise<MikroORM> | MikroORM);
 
 /**
- * Hosted service managing MikroORM startup connectivity, migrations, and clean pool shutdown.
+ * Internal hosted service managing MikroORM startup initialization and clean connection pool shutdown.
  */
-export class MikroLifetimeService implements IDatabaseLifetimeService {
+export class MikroHostService implements HostedService {
   private _isReady = false;
   private _orm: MikroORM | null = null;
 
@@ -29,18 +30,10 @@ export class MikroLifetimeService implements IDatabaseLifetimeService {
   get instance(): MikroORM {
     if (!this._orm) {
       throw new Error(
-        'MikroORM instance is not yet initialized. The application host must start first, or provide an already initialized MikroORM instance.',
+        'MikroORM instance is not yet initialized. Start the application host or supply an initialized MikroORM instance.',
       );
     }
     return this._orm;
-  }
-
-  async initialize(signal?: AbortSignal): Promise<void> {
-    await this.start(signal ?? new AbortController().signal);
-  }
-
-  async close(signal?: AbortSignal): Promise<void> {
-    await this.stop(signal ?? new AbortController().signal);
   }
 
   async start(signal: AbortSignal): Promise<void> {
