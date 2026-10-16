@@ -1,0 +1,55 @@
+{
+  "name": "@tsnx/mikro-orm",
+  "version": "0.1.0",
+  "description": "MikroORM provider adapter for TSNX Data - Scoped EntityManager, MikroDbContext, and Hosted Service integration",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "!dist/__tests__",
+    "!dist/**/*.tsbuildinfo",
+    "!dist/**/*.map",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "tsc -b --clean",
+    "typecheck": "tsc -b --noEmit",
+    "test": "node --test dist/__tests__/**/*.test.js"
+  },
+  "dependencies": {
+    "@tsnx/data": "workspace:*",
+    "@tsnx/hosting-abstractions": "^1.1.0"
+  },
+  "peerDependencies": {
+    "@mikro-orm/core": ">=6.0.0"
+  },
+  "devDependencies": {
+    "@mikro-orm/core": "^6.4.16",
+    "@mikro-orm/sqlite": "^6.4.16",
+    "@tsnx/hosting": "^1.1.0",
+    "@types/node": "^22.13.9"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tsnxjs/data.git",
+    "directory": "packages/mikro-orm"
+  },
+  "bugs": "https://github.com/tsnxjs/data/issues",
+  "homepage": "https://github.com/tsnxjs/data#readme"
+}

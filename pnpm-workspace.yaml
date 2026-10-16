@@ -1,0 +1,8 @@
+packages:
+  - 'packages/*'
+allowBuilds:
+  sqlite3: true
+  esbuild: true
+minimumReleaseAgeExclude:
+  - '@tsnx/hosting-abstractions@1.1.0'
+  - '@tsnx/hosting@1.1.0'
