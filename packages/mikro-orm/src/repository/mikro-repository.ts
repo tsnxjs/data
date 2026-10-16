@@ -70,6 +70,7 @@ export class MikroDbSet<TEntity extends object, TId = unknown>
     if (options.orderBy) mapped.orderBy = options.orderBy;
     if (options.populate) mapped.populate = options.populate;
     if (options.fields) mapped.fields = options.fields;
+    if (options.asNoTracking) mapped.disableIdentityMap = true;
     return mapped;
   }
 }

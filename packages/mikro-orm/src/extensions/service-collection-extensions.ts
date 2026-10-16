@@ -7,11 +7,13 @@ import {
   DB_CONTEXT,
   DB_UNIT_OF_WORK,
   DB_CONTEXT_OPTIONS,
+  DB_CONTEXT_FACTORY,
   type DbContextOptions,
   type EntityConstructor,
 } from '@tsnx/data';
 import type { MikroORM, EntityManager } from '@mikro-orm/core';
 import { MikroDbContext } from '../context/mikro-db-context.js';
+import { MikroDbContextFactory } from '../context/mikro-db-context-factory.js';
 import { MIKRO_ORM, MIKRO_ORM_EM } from '../context/tokens.js';
 import {
   MikroHostService,
@@ -24,6 +26,7 @@ export interface AddMikroOrmOptions<TContext extends MikroDbContext = MikroDbCon
   autoMigrate?: boolean;
   ensureCreated?: boolean;
   enableLogging?: boolean;
+  enableSensitiveDataLogging?: boolean;
   connectionString?: string;
 }
 
@@ -33,6 +36,7 @@ export interface AddMikroOrmOptions<TContext extends MikroDbContext = MikroDbCon
  * - MIKRO_ORM: Singleton, manages connection pools and metadata
  * - MIKRO_ORM_EM: Scoped, forked per scope/request for isolated Unit of Work
  * - MikroDbContext / ContextClass: Scoped, EF Core-like unit of work session
+ * - IDbContextFactory: Singleton, creates isolated DbContext instances outside HTTP requests
  * - Hosted Service: Transparently manages connection pooling and graceful shutdown
  */
 export function addMikroOrm<TContext extends MikroDbContext = MikroDbContext>(
@@ -55,6 +59,7 @@ export function addMikroOrm<TContext extends MikroDbContext = MikroDbContext>(
       autoMigrate: optionsOrContext.autoMigrate,
       ensureCreated: optionsOrContext.ensureCreated,
       enableLogging: optionsOrContext.enableLogging,
+      enableSensitiveDataLogging: optionsOrContext.enableSensitiveDataLogging,
       connectionString: optionsOrContext.connectionString,
     };
   }
@@ -87,6 +92,12 @@ export function addMikroOrm<TContext extends MikroDbContext = MikroDbContext>(
   // 7. Bind IDbContext and IUnitOfWork tokens to the scoped DbContext
   services.addScoped(DB_CONTEXT, (sp) => sp.get(contextClass));
   services.addScoped(DB_UNIT_OF_WORK, (sp) => sp.get(contextClass));
+
+  // 8. Register IDbContextFactory singleton for background jobs / outside HTTP scopes
+  services.addSingleton(DB_CONTEXT_FACTORY, (sp) => {
+    const orm = sp.get(MIKRO_ORM);
+    return new MikroDbContextFactory<TContext>(orm, contextClass);
+  });
 
   return services;
 }

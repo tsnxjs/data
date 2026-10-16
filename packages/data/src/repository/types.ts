@@ -10,6 +10,7 @@ export interface FindOptions<T> {
   orderBy?: { [K in keyof T]?: 'asc' | 'desc' } | Record<string, 'asc' | 'desc'>;
   populate?: string[];
   fields?: (keyof T)[];
+  asNoTracking?: boolean;
   cancellationToken?: AbortSignal;
 }
 

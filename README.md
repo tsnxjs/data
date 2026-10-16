@@ -10,8 +10,8 @@
 
 | Package | Version | Description |
 |---|---|---|
-| [`@tsnx/data`](packages/data) | `0.1.0` | Core abstractions: `DbContext`, `IUnitOfWork`, `IRepository`, `IDbSet`, `IDbTransaction`, and DI integration |
-| [`@tsnx/mikro-orm`](packages/mikro-orm) | `0.1.0` | MikroORM provider adapter: Scoped `EntityManager` fork, `MikroDbContext`, and Hosted Service lifetime |
+| [`@tsnx/data`](packages/data) | `1.1.0` | Core abstractions: `DbContext`, `IUnitOfWork`, `IDbContextFactory`, `DbConcurrencyException`, and DI integration |
+| [`@tsnx/mikro-orm`](packages/mikro-orm) | `1.1.0` | MikroORM provider adapter: Scoped `EntityManager` fork, `MikroDbContext`, `IDbContextFactory`, and optimistic concurrency mapping |
 
 ---
 
@@ -21,15 +21,21 @@
    - Each HTTP request or background worker scope receives an isolated `DbContext` instance.
    - For MikroORM, this is backed by `em.fork()`, ensuring identity map isolation and eliminating cross-request state pollution.
 
-2. **Transaction Management (`IDbTransaction`)**:
+2. **`IDbContextFactory<TContext>`**:
+   - Creates fresh, isolated `DbContext` instances on-demand outside standard HTTP request scopes (background jobs, queue consumers, CLI commands).
+
+3. **Optimistic Concurrency & HTTP 409 Conflict**:
+   - Version column conflicts (`OptimisticLockError`) are automatically mapped to `DbConcurrencyException` with `statusCode: 409`, integrating directly with TSNX ProblemDetails error handling.
+
+4. **High-Performance `asNoTracking` Queries**:
+   - Read-heavy queries bypass identity map tracking for reduced memory allocation and maximum throughput.
+
+5. **Transaction Management (`IDbTransaction`)**:
    - Explicit transactions (`await context.beginTransaction()`, `await tx.commit()`, `await tx.rollback()`).
    - Managed execution (`await context.executeInTransaction(async (tx) => { ... })`) with automatic rollback on error.
 
-3. **Repository & `DbSet<T>`**:
-   - Access entities using `context.set(Entity)` or inject registered entity repositories directly via `addEntityRepository(services, Entity)`.
-
-4. **Transparent Host Lifecycle**:
-   - Connection pools are opened on demand / on host start and closed cleanly upon application shutdown (`SIGTERM`/`SIGINT`) via internal hosted services, keeping the public API clean and idiomatic.
+6. **Transparent Host Lifecycle**:
+   - Connection pools are opened on demand and closed cleanly upon application shutdown (`SIGTERM`/`SIGINT`) via internal hosted services, keeping the public API clean and idiomatic.
 
 ---
 
@@ -58,13 +64,14 @@ addMikroOrm(builder.services, defineConfig({
 }), {
   autoMigrate: true,
   ensureCreated: true,
+  enableSensitiveDataLogging: true,
 });
 
 const app = builder.build();
 
 // Inject Scoped DbContext in endpoints
 app.mapGet('/users', async (db: MikroDbContext) => {
-  return await db.set(User).findMany();
+  return await db.set(User).findMany({}, { asNoTracking: true });
 });
 
 app.mapPost('/users', async (db: MikroDbContext, body: { name: string }) => {

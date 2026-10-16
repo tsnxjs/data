@@ -1,8 +1,9 @@
 // Tokens
 export * from './context/tokens.js';
 
-// Context & Transactions
+// Context, Factory & Transactions
 export * from './context/mikro-db-context.js';
+export * from './context/mikro-db-context-factory.js';
 export * from './context/mikro-database-facade.js';
 export * from './context/mikro-transaction.js';
 

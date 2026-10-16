@@ -48,6 +48,7 @@ export interface DbContextOptions<TOptions = unknown> {
   autoMigrate?: boolean;
   ensureCreated?: boolean;
   enableLogging?: boolean;
+  enableSensitiveDataLogging?: boolean;
   providerOptions?: TOptions;
 }
 
@@ -74,6 +75,11 @@ export class DbContextOptionsBuilder<TOptions = unknown> {
 
   enableLogging(enable = true): this {
     this._options.enableLogging = enable;
+    return this;
+  }
+
+  enableSensitiveDataLogging(enable = true): this {
+    this._options.enableSensitiveDataLogging = enable;
     return this;
   }
 

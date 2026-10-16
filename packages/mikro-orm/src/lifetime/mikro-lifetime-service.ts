@@ -47,7 +47,13 @@ export class MikroHostService implements HostedService {
         if (typeof this.source === 'function') {
           this._orm = await this.source();
         } else {
-          this._orm = await MikroORM.init(this.source as Options);
+          const config = { ...(this.source as Options) };
+          if (this.options?.enableSensitiveDataLogging) {
+            config.debug = true;
+          } else if (this.options?.enableLogging !== undefined) {
+            config.debug = Boolean(this.options.enableLogging);
+          }
+          this._orm = await MikroORM.init(config);
         }
       }
 

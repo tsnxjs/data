@@ -8,6 +8,7 @@ import {
   DB_CONTEXT,
   DB_UNIT_OF_WORK,
   DB_CONTEXT_OPTIONS,
+  DbConcurrencyException,
   type IDatabaseFacade,
   type IDbTransaction,
   type IDbSet,
@@ -107,19 +108,34 @@ class TestDbContext extends DbContext {
 }
 
 describe('@tsnx/data - EF Core Inspired Abstractions & Scoped Lifecycle', () => {
-  it('DbContextOptionsBuilder configures options correctly', () => {
+  it('DbContextOptionsBuilder configures options including sensitive data logging', () => {
     const builder = new DbContextOptionsBuilder();
     builder
       .useConnectionString('sqlite://test.db')
       .enableAutoMigrate(true)
       .ensureCreated(true)
-      .enableLogging(true);
+      .enableLogging(true)
+      .enableSensitiveDataLogging(true);
 
     const options = builder.build();
     assert.equal(options.connectionString, 'sqlite://test.db');
     assert.equal(options.autoMigrate, true);
     assert.equal(options.ensureCreated, true);
     assert.equal(options.enableLogging, true);
+    assert.equal(options.enableSensitiveDataLogging, true);
+  });
+
+  it('DbConcurrencyException maps to HTTP 409 Conflict', () => {
+    const err = new DbConcurrencyException('Row version changed by concurrent update.', {
+      entityName: 'Product',
+      entityId: 42,
+    });
+
+    assert.equal(err.statusCode, 409);
+    assert.equal(err.name, 'DbConcurrencyException');
+    assert.equal(err.entityName, 'Product');
+    assert.equal(err.entityId, 42);
+    assert.ok(err instanceof Error);
   });
 
   it('addDbContext registers DbContext with Scoped lifetime and binds tokens', async () => {

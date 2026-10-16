@@ -2,6 +2,8 @@
 export * from './db-context/types.js';
 export * from './db-context/tokens.js';
 export * from './db-context/db-context.js';
+export * from './db-context/factory.js';
+export * from './db-context/exceptions.js';
 
 // Unit of Work & Transactions
 export * from './unit-of-work/types.js';
