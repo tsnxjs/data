@@ -10,8 +10,8 @@
 
 | Package | Version | Description |
 |---|---|---|
-| [`@tsnx/data`](packages/data) | `1.1.0` | Core abstractions: `DbContext`, `IUnitOfWork`, `IDbContextFactory`, `DbConcurrencyException`, and DI integration |
-| [`@tsnx/mikro-orm`](packages/mikro-orm) | `1.1.0` | MikroORM provider adapter: Scoped `EntityManager` fork, `MikroDbContext`, `IDbContextFactory`, and optimistic concurrency mapping |
+| [`@tsnx/data`](packages/data) | `1.2.1` | Core abstractions: `DbContext`, `IUnitOfWork`, `IDbContextFactory`, `DbConcurrencyException`, and DI integration |
+| [`@tsnx/mikro-orm`](packages/mikro-orm) | `1.2.1` | MikroORM provider adapter: Scoped `EntityManager` fork, `MikroDbContext`, `IDbContextFactory`, and optimistic concurrency mapping |
 
 ---
 
