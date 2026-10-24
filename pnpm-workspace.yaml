@@ -4,5 +4,5 @@ allowBuilds:
   sqlite3: true
   esbuild: true
 minimumReleaseAgeExclude:
-  - '@tsnx/hosting-abstractions@1.1.0'
-  - '@tsnx/hosting@1.1.0'
+  - '@tsnx/hosting-abstractions@2.0.0-rc.2'
+  - '@tsnx/hosting@2.0.0-rc.2'

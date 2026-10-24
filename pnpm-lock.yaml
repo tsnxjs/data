@@ -176,12 +176,12 @@ importers:
   packages/data:
     dependencies:
       '@tsnx/hosting-abstractions':
-        specifier: ^1.1.0
-        version: 1.1.0
+        specifier: ^2.0.0-rc.2
+        version: 2.0.0-rc.2
     devDependencies:
       '@tsnx/hosting':
-        specifier: ^1.1.0
-        version: 1.1.0
+        specifier: ^2.0.0-rc.2
+        version: 2.0.0-rc.2
       '@types/node':
         specifier: ^22.13.9
         version: 22.20.5
@@ -192,8 +192,8 @@ importers:
         specifier: workspace:*
         version: link:../data
       '@tsnx/hosting-abstractions':
-        specifier: ^1.1.0
-        version: 1.1.0
+        specifier: ^2.0.0-rc.2
+        version: 2.0.0-rc.2
     devDependencies:
       '@mikro-orm/core':
         specifier: ^6.4.16
@@ -202,8 +202,8 @@ importers:
         specifier: ^6.4.16
         version: 6.6.17(@mikro-orm/core@6.6.17)
       '@tsnx/hosting':
-        specifier: ^1.1.0
-        version: 1.1.0
+        specifier: ^2.0.0-rc.2
+        version: 2.0.0-rc.2
       '@types/node':
         specifier: ^22.13.9
         version: 22.20.5
@@ -263,12 +263,12 @@ packages:
     resolution: {integrity: sha512-RbzJvlNzmRq5c3O09UipeuXno4tA1FE6ikOjxZK0tuxVv3412l64l5t1W5pj4+rJq9vpkm/kwiR07aZXnsKPxw==}
     engines: {node: '>= 6'}
 
-  '@tsnx/hosting-abstractions@1.1.0':
-    resolution: {integrity: sha512-oiWZ9vN9Uz9hqYPXTg2Gw9miNuAGAjMO+xKcMYs2x6l0uJ/XQ6TzrU4bUkiq8h3TPR1yc2l8e2yDyGJ+6fAAfQ==}
+  '@tsnx/hosting-abstractions@2.0.0-rc.2':
+    resolution: {integrity: sha512-ZrzZi6KeFj1mNgYd+VPAZTAT7kW9ObCvdX8u5ZdVIhp6Rwa2oHAp15EehfIMExq+WiqlDEKqprp8fhRXEn6/lQ==}
     engines: {node: '>=18.0.0'}
 
-  '@tsnx/hosting@1.1.0':
-    resolution: {integrity: sha512-AJ/hyOMmKvLXGbwupD6BfRj0Gscv8GVoY/vsVx84xmSPWJ1hPaPSK0saPg8Gi4Oj8T/N3rkpEutnegb5FMlpqA==}
+  '@tsnx/hosting@2.0.0-rc.2':
+    resolution: {integrity: sha512-WmorX3oWM0Jm9+tqKgbRmP37zSPZC99DPj3EwlGwbDASlXG3tti819Y+JqMc6Xje4wC8xBASgjdsw9aFLBJdEA==}
     engines: {node: '>=18.0.0'}
 
   '@types/node@22.20.5':
@@ -1032,11 +1032,11 @@ snapshots:
   '@tootallnate/once@1.1.2':
     optional: true
 
-  '@tsnx/hosting-abstractions@1.1.0': {}
+  '@tsnx/hosting-abstractions@2.0.0-rc.2': {}
 
-  '@tsnx/hosting@1.1.0':
+  '@tsnx/hosting@2.0.0-rc.2':
     dependencies:
-      '@tsnx/hosting-abstractions': 1.1.0
+      '@tsnx/hosting-abstractions': 2.0.0-rc.2
       '@types/node': 22.20.5
 
   '@types/node@22.20.5':
